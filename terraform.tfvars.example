@@ -1,0 +1,55 @@
+# ==============================================================================
+# Example Terraform Variables: GCP Billing Alerts & Hard-Stop Guardrails
+# Copy this file to `terraform.tfvars` and customize for your environment.
+# ==============================================================================
+
+project_id         = "my-customer-gcp-project-id"
+region             = "asia-southeast1"
+environment        = "poc"
+billing_account_id = "012345-67890A-BCDEFG"
+
+# --- Budget & Thresholds ---
+monthly_budget_amount       = 5000
+budget_currency             = "" # Leave "" to auto-inherit Billing Account currency (e.g. SGD or USD)
+credit_types_treatment      = "INCLUDE_ALL_CREDITS"
+alert_thresholds_actual     = [0.50, 0.80, 0.90, 1.00]
+alert_thresholds_forecasted = [1.00]
+
+# --- Hard-Stop Enforcement ---
+# Options:
+#   "DRY_RUN"               - Log and alert only (recommended for initial testing)
+#   "STOP_COMPUTE_AND_APIS" - Stop running Compute VMs and disable target billable APIs
+#   "UNLINK_BILLING"        - Detach project from Billing Account (nuclear hard stop)
+enforcement_mode = "STOP_COMPUTE_AND_APIS"
+
+# Trigger hard stop at 100% of budget (or set to 0.95 for a 5% buffer against billing latency)
+hard_stop_threshold_percent = 1.00
+trigger_on_forecast_breach  = false
+
+# Billable APIs disabled when enforcement_mode = "STOP_COMPUTE_AND_APIS"
+apis_to_disable_on_breach = [
+  "aiplatform.googleapis.com",
+  "compute.googleapis.com",
+  "notebooks.googleapis.com",
+  "dataflow.googleapis.com",
+]
+
+# Set to true only if the identity running Terraform has Billing Account Admin on billing_account_id
+grant_billing_account_iam = false
+
+# Set to true if your Organization enforces Domain Restricted Sharing (constraints/iam.allowedPolicyMemberDomains)
+# so Cloud Billing's global service account (billing-budget-alert@system.gserviceaccount.com) can bind to the Pub/Sub topic.
+relax_project_drs_for_billing_pubsub = false
+
+# --- Multi-Channel Notifications ---
+# Up to 5 email addresses (use group aliases for broader distribution)
+alert_emails = [
+  "cloud-finops@example.com",
+  "project-owners@example.com",
+]
+disable_default_iam_recipients = true
+
+# Optional Slack Incoming Webhook integration (stored in Secret Manager)
+enable_slack_webhook = false
+slack_webhook_url    = ""
+slack_channel_name   = "#finops-alerts"
